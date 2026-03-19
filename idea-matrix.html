@@ -1,489 +1,228 @@
+
 <!DOCTYPE html>
-<html lang="ko">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>업무 효율화 아이디어 매트릭스</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta charset="utf-8">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 20px; }
 
-  :root {
-    --bg: #0f0f11;
-    --bg2: #16161a;
-    --bg3: #1e1e24;
-    --border: rgba(255,255,255,0.08);
-    --border-hover: rgba(255,255,255,0.18);
-    --text: #e8e6e0;
-    --text2: #8a8882;
-    --text3: #5a5856;
-    --accent-teal: #00c896;
-    --accent-blue: #4d9fff;
-    --accent-amber: #f5a623;
-    --accent-purple: #9b7ff4;
-    --accent-gray: #6b7280;
-    --teal-dim: rgba(0,200,150,0.12);
-    --blue-dim: rgba(77,159,255,0.12);
-    --amber-dim: rgba(245,166,35,0.12);
-    --purple-dim: rgba(155,127,244,0.12);
-  }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .header h2 { font-size: 15px; font-weight: 600; color: #111; }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Noto Sans KR', sans-serif;
-    font-size: 13px;
-    min-height: 100vh;
-    padding: 24px;
-    overflow-x: hidden;
-  }
+  .legend { display: flex; gap: 12px; align-items: center; }
+  .leg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #888; }
+  .leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-active { background: #22c55e; box-shadow: 0 0 0 2px rgba(34,197,94,0.25); }
+  .dot-done   { background: #94a3b8; }
+  .dot-hold   { background: #e5e7eb; border: 1px solid #d1d5db; }
 
-  .header {
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-    margin-bottom: 24px;
-  }
-  .header h1 {
-    font-size: 16px;
-    font-weight: 500;
-    letter-spacing: -0.3px;
-  }
-  .header .mono {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--text3);
-  }
-
-  /* 매트릭스 영역 */
   .matrix-wrap {
     position: relative;
     width: 100%;
-    aspect-ratio: 16/10;
-    min-height: 380px;
-    background: var(--bg2);
-    border: 1px solid var(--border);
+    aspect-ratio: 1.45;
+    background: #fafafa;
+    border: 1px solid #e8e8e8;
     border-radius: 12px;
     overflow: hidden;
   }
 
-  /* 사분면 배경 */
-  .quadrant {
+  .quad {
     position: absolute;
     width: 50%; height: 50%;
-    border: 0.5px solid var(--border);
-    display: flex;
-    align-items: flex-start;
-    padding: 10px 12px;
-  }
-  .q-tl { top: 0; left: 0; border-top: none; border-left: none; }
-  .q-tr { top: 0; right: 0; border-top: none; border-right: none; }
-  .q-bl { bottom: 0; left: 0; border-bottom: none; border-left: none; }
-  .q-br { bottom: 0; right: 0; border-bottom: none; border-right: none; }
-  .q-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    color: var(--text3);
+    font-size: 10px; font-weight: 500;
+    color: #d1d5db;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
-    letter-spacing: 0.8px;
-    pointer-events: none;
+    padding: 10px 14px;
   }
-  .q-tl .q-label { color: rgba(0,200,150,0.4); }
-  .q-tr .q-label { color: rgba(77,159,255,0.4); }
-  .q-bl .q-label { color: rgba(245,166,35,0.3); }
-  .q-br .q-label { color: rgba(155,127,244,0.35); }
+  .q-tl { top:0; left:0; background: rgba(240,250,245,0.6); }
+  .q-tr { top:0; right:0; background: rgba(238,244,255,0.6); }
+  .q-bl { bottom:0; left:0; }
+  .q-br { bottom:0; right:0; background: rgba(245,240,255,0.4); }
 
-  /* 축 레이블 */
-  .axis-x {
-    position: absolute;
-    bottom: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 10px;
-    color: var(--text3);
-    white-space: nowrap;
-    font-family: 'IBM Plex Mono', monospace;
-  }
-  .axis-y {
-    position: absolute;
-    left: -56px;
-    top: 50%;
-    transform: translateY(-50%) rotate(-90deg);
-    font-size: 10px;
-    color: var(--text3);
-    white-space: nowrap;
-    font-family: 'IBM Plex Mono', monospace;
-  }
-  .axis-wrap {
-    position: relative;
-    width: 100%;
-    margin-bottom: 32px;
-    padding-left: 64px;
+  .h-line { position:absolute; left:0; right:0; top:50%; height:1px; background:#e0e0e0; }
+  .v-line { position:absolute; top:0; bottom:0; left:50%; width:1px; background:#e0e0e0; }
+  .axis-x { position:absolute; bottom:7px; left:0; right:0; text-align:center; font-size:10px; color:#c0c0c0; }
+  .axis-y-label {
+    position:absolute; left:6px; top:50%;
+    transform:translateY(-50%) rotate(-90deg);
+    font-size:10px; color:#c0c0c0; white-space:nowrap;
   }
 
-  /* 노드 카드 */
-  .node {
+  .card {
     position: absolute;
     transform: translate(-50%, -50%);
+    padding: 8px 11px;
+    border-radius: 9px;
     cursor: pointer;
-    z-index: 10;
+    transition: box-shadow 0.15s, transform 0.15s;
+    border: 1.5px solid transparent;
+    min-width: 108px;
+    text-align: center;
+    user-select: none;
+    background: #fff;
   }
-  .node-inner {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px 12px;
-    white-space: nowrap;
-    transition: all 0.18s ease;
-    position: relative;
-    overflow: hidden;
+  .card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.1); transform: translate(-50%, -53%); }
+
+  .card .title { font-size: 12px; font-weight: 600; }
+  .card .desc  { font-size: 10px; margin-top: 2px; }
+
+  /* 상태별 스타일 */
+  .status-active {
+    border-color: #22c55e !important;
+    box-shadow: 0 0 0 3px rgba(34,197,94,0.12), 0 2px 8px rgba(34,197,94,0.15);
   }
-  .node-inner::before {
-    content: '';
+  .status-active::after {
+    content: '진행중';
     position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
-    border-radius: 8px 0 0 8px;
+    top: -9px; right: -4px;
+    background: #22c55e;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 20px;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
   }
-  .node:hover .node-inner {
-    border-color: var(--border-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 3px rgba(34,197,94,0.12), 0 2px 8px rgba(34,197,94,0.15); }
+    50%      { box-shadow: 0 0 0 5px rgba(34,197,94,0.2),  0 2px 12px rgba(34,197,94,0.25); }
   }
-  .node.active .node-inner {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  .status-active { animation: pulse 2.5s ease-in-out infinite; }
+
+  .status-done {
+    opacity: 0.45;
+    filter: grayscale(0.5);
   }
-  .node-title {
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 1.3;
-  }
-  .node-sub {
-    font-size: 10px;
-    color: var(--text2);
-    margin-top: 2px;
-    line-height: 1.3;
+  .status-done::after {
+    content: '완료';
+    position: absolute;
+    top: -9px; right: -4px;
+    background: #94a3b8;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 20px;
   }
 
   /* 색상 테마 */
-  .teal .node-inner { border-color: rgba(0,200,150,0.3); background: rgba(0,200,150,0.07); }
-  .teal .node-inner::before { background: var(--accent-teal); }
-  .teal .node-title { color: #7de8c8; }
-  .teal:hover .node-inner, .teal.active .node-inner { border-color: rgba(0,200,150,0.6); background: rgba(0,200,150,0.12); box-shadow: 0 8px 24px rgba(0,200,150,0.1); }
+  .c-green  { border-color: #4caf8a; background: #f0faf5; }
+  .c-green  .title { color: #1a7a52; } .c-green .desc { color: #4caf8a; }
+  .c-blue   { border-color: #5b8dee; background: #eef4ff; }
+  .c-blue   .title { color: #1a3e8c; } .c-blue  .desc { color: #5b8dee; }
+  .c-amber  { border-color: #f0a530; background: #fff8ed; }
+  .c-amber  .title { color: #8c5a00; } .c-amber .desc { color: #c97c10; }
+  .c-purple { border-color: #9b72ef; background: #f5f0ff; }
+  .c-purple .title { color: #4a1f9c; } .c-purple .desc { color: #8b5cf6; }
+  .c-gray   { border-color: #ccc; background: #f7f7f7; }
+  .c-gray   .title { color: #444; } .c-gray .desc { color: #999; }
 
-  .blue .node-inner { border-color: rgba(77,159,255,0.3); background: rgba(77,159,255,0.07); }
-  .blue .node-inner::before { background: var(--accent-blue); }
-  .blue .node-title { color: #7dbfff; }
-  .blue:hover .node-inner, .blue.active .node-inner { border-color: rgba(77,159,255,0.6); background: rgba(77,159,255,0.12); box-shadow: 0 8px 24px rgba(77,159,255,0.1); }
+  /* 진행중이면 색상 테마 강조 오버라이드 */
+  .status-active.c-green  { background: #e8f8f0; }
+  .status-active.c-blue   { background: #e4eeff; }
+  .status-active.c-amber  { background: #fff3e0; }
+  .status-active.c-purple { background: #ede8ff; }
 
-  .amber .node-inner { border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.07); }
-  .amber .node-inner::before { background: var(--accent-amber); }
-  .amber .node-title { color: #f5c96a; }
-  .amber:hover .node-inner, .amber.active .node-inner { border-color: rgba(245,166,35,0.6); background: rgba(245,166,35,0.12); box-shadow: 0 8px 24px rgba(245,166,35,0.1); }
-
-  .purple .node-inner { border-color: rgba(155,127,244,0.3); background: rgba(155,127,244,0.07); }
-  .purple .node-inner::before { background: var(--accent-purple); }
-  .purple .node-title { color: #bcaaff; }
-  .purple:hover .node-inner, .purple.active .node-inner { border-color: rgba(155,127,244,0.6); background: rgba(155,127,244,0.12); box-shadow: 0 8px 24px rgba(155,127,244,0.1); }
-
-  .gray .node-inner { border-color: rgba(107,114,128,0.3); background: rgba(107,114,128,0.07); }
-  .gray .node-inner::before { background: var(--accent-gray); }
-  .gray .node-title { color: #9ca3af; }
-  .gray:hover .node-inner, .gray.active .node-inner { border-color: rgba(107,114,128,0.5); background: rgba(107,114,128,0.12); box-shadow: 0 8px 24px rgba(107,114,128,0.1); }
-
-  /* 상세 패널 */
-  .detail-panel {
-    margin-top: 16px;
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 18px 20px;
-    display: none;
-    animation: slideUp 0.2s ease;
+  /* 하단 패널 */
+  .panel {
+    display: none; margin-top: 12px;
+    background: #f9f9f9; border: 1px solid #eee;
+    border-radius: 10px; padding: 14px 16px;
+    position: relative;
   }
-  .detail-panel.visible { display: block; }
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .detail-top {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-  .detail-dot {
-    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-  }
-  .detail-title { font-size: 14px; font-weight: 500; }
-  .detail-badge {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 4px;
-    margin-left: auto;
-  }
-  .detail-body { font-size: 12px; color: var(--text2); line-height: 1.8; }
-  .detail-body strong { color: var(--text); font-weight: 500; }
-  .detail-tags {
-    display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px;
-  }
-  .tag {
-    font-size: 10px;
-    font-family: 'IBM Plex Mono', monospace;
-    padding: 3px 8px;
-    border-radius: 4px;
-    border: 1px solid var(--border);
-    color: var(--text3);
-  }
-
-  .close-btn {
-    position: absolute;
-    top: 14px; right: 16px;
-    background: none; border: none; cursor: pointer;
-    color: var(--text3); font-size: 16px; line-height: 1;
-    padding: 2px 4px;
-    transition: color 0.15s;
-  }
-  .close-btn:hover { color: var(--text); }
-  .detail-panel { position: relative; }
-
-  /* 범례 */
-  .legend {
-    display: flex; gap: 16px; flex-wrap: wrap;
-    margin-top: 10px;
-    padding-left: 64px;
-  }
-  .legend-item {
-    display: flex; align-items: center; gap: 5px;
-    font-size: 10px; color: var(--text3);
-    font-family: 'IBM Plex Mono', monospace;
-  }
-  .legend-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .panel.show { display: block; }
+  .panel .close { position:absolute; top:10px; right:14px; font-size:16px; cursor:pointer; color:#bbb; }
+  .panel .ptitle { font-size:13px; font-weight:600; color:#111; }
+  .panel .pdesc  { font-size:12px; color:#666; margin-top:5px; line-height:1.6; }
+  .panel .pstatus { display:inline-block; font-size:10px; font-weight:600; padding:2px 8px; border-radius:20px; margin-top:8px; }
+  .pstatus-active { background:#dcfce7; color:#15803d; }
+  .pstatus-hold   { background:#f3f4f6; color:#6b7280; }
+  .pstatus-done   { background:#e2e8f0; color:#475569; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>업무 효율화 아이디어 매트릭스</h1>
-  <span class="mono">— 클릭해서 상세 보기</span>
+  <h2>내부 업무 효율화 매트릭스</h2>
+  <div class="legend">
+    <div class="leg"><div class="leg-dot dot-active"></div>진행중</div>
+    <div class="leg"><div class="leg-dot dot-hold"></div>대기</div>
+    <div class="leg"><div class="leg-dot dot-done"></div>완료</div>
+  </div>
 </div>
 
-<div class="axis-wrap">
-  <div class="matrix-wrap" id="matrix">
+<div class="matrix-wrap">
+  <div class="quad q-tl">빠른 실행</div>
+  <div class="quad q-tr" style="text-align:right">전략적 투자</div>
+  <div class="quad q-bl">낮은 우선순위</div>
+  <div class="quad q-br" style="text-align:right">장기 검토</div>
+  <div class="h-line"></div>
+  <div class="v-line"></div>
+  <div class="axis-x">← 낮은 복잡도 &nbsp;&nbsp; 높은 복잡도 →</div>
+  <div class="axis-y-label">↑ 높은 임팩트 &nbsp; 낮은 임팩트 ↓</div>
 
-    <div class="quadrant q-tl"><span class="q-label">빠른 win</span></div>
-    <div class="quadrant q-tr"><span class="q-label">전략적 투자</span></div>
-    <div class="quadrant q-bl"><span class="q-label">검토 필요</span></div>
-    <div class="quadrant q-br"><span class="q-label">장기 과제</span></div>
-
-    <!-- 노드들 (left%, top% = 복잡도, 임팩트 반전) -->
-    <!-- 슬랙 요약봇: 낮은복잡도(20%), 높은임팩트(25%) -->
-    <div class="node teal" style="left:18%;top:22%" data-id="slack" onclick="showDetail('slack')">
-      <div class="node-inner">
-        <div class="node-title">슬랙 요약봇</div>
-        <div class="node-sub">채널별 일간 요약</div>
-      </div>
-    </div>
-
-    <!-- 주간보고 자동화: 낮은복잡도(28%), 높은임팩트(35%) -->
-    <div class="node teal" style="left:30%;top:32%" data-id="report" onclick="showDetail('report')">
-      <div class="node-inner">
-        <div class="node-title">주간보고 자동화</div>
-        <div class="node-sub">4회 → 1회 통합</div>
-      </div>
-    </div>
-
-    <!-- 업무 대시보드+agent: 높은복잡도(68%), 높은임팩트(20%) -->
-    <div class="node blue" style="left:68%;top:20%" data-id="dashboard" onclick="showDetail('dashboard')">
-      <div class="node-inner">
-        <div class="node-title">업무 대시보드 + agent</div>
-        <div class="node-sub">자동 지표 집계·보고</div>
-      </div>
-    </div>
-
-    <!-- 마케팅 agent: 높은복잡도(78%), 높은임팩트(38%) -->
-    <div class="node blue" style="left:76%;top:32%" data-id="marketing" onclick="showDetail('marketing')">
-      <div class="node-inner">
-        <div class="node-title">마케팅 agent</div>
-        <div class="node-sub">A/B 테스트 효율화</div>
-      </div>
-    </div>
-
-    <!-- 관리자페이지: 낮은복잡도(22%), 낮은임팩트(68%) -->
-    <div class="node amber" style="left:22%;top:66%" data-id="admin" onclick="showDetail('admin')">
-      <div class="node-inner">
-        <div class="node-title">관리자페이지 개선</div>
-        <div class="node-sub">UX·프로세스 리팩터</div>
-      </div>
-    </div>
-
-    <!-- QA agent: 높은복잡도(72%), 낮은임팩트(62%) -->
-    <div class="node purple" style="left:70%;top:62%" data-id="qa" onclick="showDetail('qa')">
-      <div class="node-inner">
-        <div class="node-title">QA agent</div>
-        <div class="node-sub">테스트 프로세스 자동화</div>
-      </div>
-    </div>
-
-    <!-- agent 활용 공유: 낮은복잡도(16%), 낮은임팩트(80%) -->
-    <div class="node gray" style="left:18%;top:78%" data-id="share" onclick="showDetail('share')">
-      <div class="node-inner">
-        <div class="node-title">agent 활용방안 공유</div>
-        <div class="node-sub">팀 역량 확산 세션</div>
-      </div>
-    </div>
-
+  <div class="card c-green status-active" style="left:22%;top:22%"
+       onclick="show('슬랙 요약봇','n8n + Claude API로 채널 요약 후 아침 DM 자동 발송. 현재 파이프라인 설계 중.','active')">
+    <div class="title">슬랙 요약봇</div>
+    <div class="desc">즉시 시작 가능</div>
   </div>
 
-  <div class="axis-y">임팩트 낮음 ← → 임팩트 높음</div>
-</div>
-
-<div class="legend">
-  <div class="legend-item"><div class="legend-dot" style="background:#00c896"></div> 빠른 win</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#4d9fff"></div> 전략적 투자</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#f5a623"></div> 검토 필요</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#9b7ff4"></div> 장기 과제</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#6b7280"></div> 기반 작업</div>
-</div>
-
-<div class="detail-panel" id="detail-panel">
-  <button class="close-btn" onclick="closeDetail()">×</button>
-  <div class="detail-top">
-    <div class="detail-dot" id="d-dot"></div>
-    <div class="detail-title" id="d-title"></div>
-    <div class="detail-badge" id="d-badge"></div>
+  <div class="card c-green" style="left:34%;top:36%"
+       onclick="show('주간보고 자동화','템플릿 표준화 + 데이터 자동 수집으로 4회 → 1회 목표.','hold')">
+    <div class="title">주간보고 자동화</div>
+    <div class="desc">4회 → 1회 목표</div>
   </div>
-  <div class="detail-body" id="d-body"></div>
-  <div class="detail-tags" id="d-tags"></div>
+
+  <div class="card c-blue status-active" style="left:64%;top:20%"
+       onclick="show('업무 대시보드 + agent','지표 추적·보고 공수 자동화. MTS 디지털팀 특성상 임팩트 명확. 현재 요구사항 정리 중.','active')">
+    <div class="title">업무 대시보드</div>
+    <div class="desc">+ 업무 agent</div>
+  </div>
+
+  <div class="card c-blue" style="left:78%;top:34%"
+       onclick="show('마케팅 agent','A/B 테스트 설계·결과 분석 자동화. 실험 사이클 단축.','hold')">
+    <div class="title">마케팅 agent</div>
+    <div class="desc">A/B 테스트 효율화</div>
+  </div>
+
+  <div class="card c-amber" style="left:25%;top:66%"
+       onclick="show('관리자페이지 개선','병목 포인트 파악이 먼저. UX 개선으로 퀵윈 전환 가능.','hold')">
+    <div class="title">관리자페이지</div>
+    <div class="desc">UX 개선</div>
+  </div>
+
+  <div class="card c-purple" style="left:70%;top:64%"
+       onclick="show('QA agent','테스트 프로세스 전면 자동화. 설계 복잡도 높지만 장기 ROI 큼.','hold')">
+    <div class="title">QA agent</div>
+    <div class="desc">테스트 프로세스</div>
+  </div>
+
+  <div class="card c-gray status-done" style="left:20%;top:80%"
+       onclick="show('agent 활용방안 공유','팀 내 AI 활용 역량 확산 세션 완료.','done')">
+    <div class="title">agent 활용 공유</div>
+    <div class="desc">팀 역량 확산</div>
+  </div>
+</div>
+
+<div class="panel" id="panel">
+  <span class="close" onclick="document.getElementById('panel').classList.remove('show')">×</span>
+  <div class="ptitle" id="ptitle"></div>
+  <div class="pdesc"  id="pdesc"></div>
+  <div class="pstatus" id="pstatus"></div>
 </div>
 
 <script>
-const data = {
-  slack: {
-    title: '슬랙 요약봇',
-    color: '#00c896',
-    badge: '즉시 시작 가능',
-    badgeBg: 'rgba(0,200,150,0.15)',
-    badgeColor: '#7de8c8',
-    body: `<strong>목적:</strong> 주요 채널의 하루 대화를 매일 아침 자동 요약 DM으로 수신<br><br>
-<strong>구현 스택:</strong> n8n 스케줄 트리거 → Slack API 메시지 수집 → Claude API 요약 → Slack DM 발송<br><br>
-<strong>예상 공수:</strong> 1~2주. n8n 워크플로우 + Claude prompt 튜닝이 핵심<br><br>
-<strong>기대 효과:</strong> 채널 눈치보기 시간 절감, 놓친 맥락 빠른 캐치업`,
-    tags: ['n8n', 'Slack API', 'Claude API', '스케줄러']
-  },
-  report: {
-    title: '주간보고 자동화',
-    color: '#00c896',
-    badge: '즉시 시작 가능',
-    badgeBg: 'rgba(0,200,150,0.15)',
-    badgeColor: '#7de8c8',
-    body: `<strong>목적:</strong> 주 4회 보고를 1회 통합 보고로 줄이기<br><br>
-<strong>접근법:</strong> ① 보고 템플릿 표준화 → ② 데이터 자동 수집(MTS 지표) → ③ Claude로 초안 생성 → ④ 검토 후 발송<br><br>
-<strong>병목 제거:</strong> 수기 데이터 취합이 가장 큰 공수. DB/대시보드 연동으로 해결<br><br>
-<strong>기대 효과:</strong> 보고 작성 공수 70%↓, 수신자 피로도 감소`,
-    tags: ['보고 자동화', 'Claude API', '데이터 파이프라인', 'n8n']
-  },
-  dashboard: {
-    title: '업무 대시보드 + 업무 agent',
-    color: '#4d9fff',
-    badge: '2~4주',
-    badgeBg: 'rgba(77,159,255,0.15)',
-    badgeColor: '#7dbfff',
-    body: `<strong>목적:</strong> MTS 디지털 팀 KPI를 실시간 집계·요약하는 agent 대시보드<br><br>
-<strong>구성:</strong> 데이터 수집 agent + 이상값 알림 agent + 주간 인사이트 생성 agent<br><br>
-<strong>기술 스택:</strong> Supabase(데이터 저장) + Claude API(분석) + n8n(오케스트레이션) + Ghost/Notion(출력)<br><br>
-<strong>기대 효과:</strong> 지표 확인 시간 80%↓, 보고 자동 생성`,
-    tags: ['multi-agent', 'Supabase', 'Claude API', 'n8n', 'MTS 연동']
-  },
-  marketing: {
-    title: '마케팅 agent + A/B 테스트',
-    color: '#4d9fff',
-    badge: '3~6주',
-    badgeBg: 'rgba(77,159,255,0.15)',
-    badgeColor: '#7dbfff',
-    body: `<strong>목적:</strong> 마케팅 소재 생성 → A/B 실험 설계 → 결과 분석 자동화<br><br>
-<strong>agent 구성:</strong> 소재 생성 agent / 실험 설계 agent / 성과 분석 agent<br><br>
-<strong>핵심 가치:</strong> 실험 사이클 단축 (기획→결과까지 수동 2주 → 자동 3일)<br><br>
-<strong>선행 조건:</strong> A/B 테스트 데이터 파이프라인 정비 필요`,
-    tags: ['A/B 테스트', 'Claude API', '소재 자동화', '성과 분석']
-  },
-  admin: {
-    title: '관리자페이지 개선',
-    color: '#f5a623',
-    badge: '범위 정의 필요',
-    badgeBg: 'rgba(245,166,35,0.15)',
-    badgeColor: '#f5c96a',
-    body: `<strong>현황:</strong> 비효율적인 내부 관리자 페이지 → 구체적인 병목 파악이 선행 필요<br><br>
-<strong>접근법 A (퀵윈):</strong> 자주 쓰는 기능 단축키/필터 추가, 페이지 로딩 최적화<br><br>
-<strong>접근법 B (리빌드):</strong> 사용자 인터뷰 → 핵심 워크플로우 재설계 → 재개발<br><br>
-<strong>추천:</strong> 먼저 "어떤 화면에서 시간을 제일 많이 낭비하나" 팀 서베이 돌리기`,
-    tags: ['UX 개선', '내부 도구', '퀵윈 가능']
-  },
-  qa: {
-    title: 'QA agent',
-    color: '#9b7ff4',
-    badge: '4~8주',
-    badgeBg: 'rgba(155,127,244,0.15)',
-    badgeColor: '#bcaaff',
-    body: `<strong>목적:</strong> MTS 릴리즈 QA 프로세스 자동화 (회귀 테스트, 예외 케이스 커버리지)<br><br>
-<strong>agent 구성:</strong> 테스트 케이스 생성 agent + 실행 agent + 버그 리포트 agent<br><br>
-<strong>선행 조건:</strong> 테스트 환경 정비, 기존 케이스 문서화가 반드시 필요<br><br>
-<strong>기대 효과:</strong> QA 공수 50%↓, 릴리즈 신뢰도 향상`,
-    tags: ['QA 자동화', 'Claude API', 'multi-agent', '테스트 엔지니어링']
-  },
-  share: {
-    title: 'agent 활용방안 공유',
-    color: '#6b7280',
-    badge: '기반 작업',
-    badgeBg: 'rgba(107,114,128,0.15)',
-    badgeColor: '#9ca3af',
-    body: `<strong>목적:</strong> 위 아이디어들이 실제로 팀에 안착하려면 공유·교육 세션이 필수<br><br>
-<strong>형식 제안:</strong> 월 1회 30분 "agent 데모 데이" — 실제 작동하는 걸 보여주는 게 핵심<br><br>
-<strong>포인트:</strong> 기술보다 "이 업무가 이렇게 줄었어요" 위주로 스토리텔링<br><br>
-<strong>효과:</strong> 팀 전체 AI 활용 역량 올라가면 개인 ROI도 올라감`,
-    tags: ['팀 교육', '내부 공유', '문화 구축']
-  }
-};
-
-let activeNode = null;
-
-function showDetail(id) {
-  const d = data[id];
-  if (!d) return;
-
-  // 이전 active 해제
-  if (activeNode) {
-    document.querySelector(`.node[data-id="${activeNode}"]`)?.classList.remove('active');
-  }
-  activeNode = id;
-  document.querySelector(`.node[data-id="${id}"]`)?.classList.add('active');
-
-  document.getElementById('d-dot').style.background = d.color;
-  document.getElementById('d-title').textContent = d.title;
-  const badge = document.getElementById('d-badge');
-  badge.textContent = d.badge;
-  badge.style.background = d.badgeBg;
-  badge.style.color = d.badgeColor;
-  document.getElementById('d-body').innerHTML = d.body;
-
-  const tagsEl = document.getElementById('d-tags');
-  tagsEl.innerHTML = d.tags.map(t => `<span class="tag">${t}</span>`).join('');
-
-  const panel = document.getElementById('detail-panel');
-  panel.classList.remove('visible');
-  void panel.offsetWidth;
-  panel.classList.add('visible');
-  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-function closeDetail() {
-  document.getElementById('detail-panel').classList.remove('visible');
-  if (activeNode) {
-    document.querySelector(`.node[data-id="${activeNode}"]`)?.classList.remove('active');
-    activeNode = null;
-  }
+function show(title, desc, status) {
+  document.getElementById('ptitle').textContent = title;
+  document.getElementById('pdesc').textContent = desc;
+  const el = document.getElementById('pstatus');
+  const map = { active: ['진행중', 'pstatus-active'], hold: ['대기', 'pstatus-hold'], done: ['완료', 'pstatus-done'] };
+  el.textContent = map[status][0];
+  el.className = 'pstatus ' + map[status][1];
+  document.getElementById('panel').classList.add('show');
 }
 </script>
 </body>
