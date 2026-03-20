@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A/B 샘플 사이즈 계산기</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff;
+    --bg2: #f7f7f5;
+    --border: #e8e7e3;
+    --text: #1a1a18;
+    --text2: #6f6f69;
+    --text3: #adadA7;
+    --accent: #2160fd;
+    --accent-bg: #f0f4ff;
+    --green: #0f9d58;
+    --green-bg: #f0fdf6;
+    --amber: #c47c0a;
+    --amber-bg: #fefce8;
+    --red: #d93025;
+    --red-bg: #fef2f0;
+  }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Pretendard', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 20px;
+    height: 100%;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 12px;
+    height: 100%;
+  }
+
+  /* 섹션 공통 */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .card-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 12px;
+  }
+
+  /* 입력 그리드 */
+  .inputs { display: flex; flex-direction: column; gap: 10px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text2);
+  }
+  .input-row {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 10px;
+    gap: 4px;
+    transition: border-color 0.12s;
+  }
+  .input-row:focus-within { border-color: var(--accent); }
+  .input-row input[type="number"] {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    outline: none;
+    min-width: 0;
+    -moz-appearance: textfield;
+  }
+  .input-row input::-webkit-inner-spin-button,
+  .input-row input::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .input-row .unit {
+    font-size: 12px;
+    color: var(--text3);
+    white-space: nowrap;
+  }
+
+  /* 슬라이더 */
+  .slider-group { display: flex; flex-direction: column; gap: 8px; }
+  .slider-item { display: flex; flex-direction: column; gap: 5px; }
+  .slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .slider-header span:first-child { font-size: 11px; font-weight: 500; color: var(--text2); }
+  .slider-val {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-bg);
+    padding: 1px 7px;
+    border-radius: 20px;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%; height: 3px;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none; cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 0 3px var(--accent-bg);
+  }
+
+  /* 토글 */
+  .toggle-row { display: flex; gap: 6px; }
+  .tog {
+    flex: 1;
+    padding: 5px 8px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border);
+    background: #fff;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text2);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.1s;
+    user-select: none;
+  }
+  .tog.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* 결과 카드 */
+  .results-card {
+    grid-column: 1 / -1;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+  }
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+  }
+  .res-item {
+    padding: 4px 16px 4px 0;
+    border-right: 1px solid var(--border);
+    margin-right: 16px;
+  }
+  .res-item:last-child { border-right: none; margin-right: 0; padding-right: 0; }
+  .res-label { font-size: 10px; font-weight: 600; color: var(--text3); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 3px; }
+  .res-value { font-size: 26px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; line-height: 1.1; }
+  .res-value.accent { color: var(--accent); }
+  .res-unit { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+  /* 실현가능성 바 */
+  .feas-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .feas-label { font-size: 11px; font-weight: 600; color: var(--text2); white-space: nowrap; }
+  .bar-track { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s cubic-bezier(.4,0,.2,1), background 0.3s; }
+  .badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .badge-g { background: var(--green-bg); color: var(--green); }
+  .badge-a { background: var(--amber-bg); color: var(--amber); }
+  .badge-r { background: var(--red-bg); color: var(--red); }
+
+  /* 상세 */
+  .detail-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .detail-card .card-title { padding: 10px 14px 0; margin-bottom: 8px; }
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 7px 14px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .detail-row:first-of-type { border-top: none; }
+  .dr-l { color: var(--text2); }
+  .dr-r { font-weight: 600; color: var(--text); }
+
+  /* notice */
+  .notice {
+    font-size: 11px;
+    color: var(--amber);
+    background: var(--amber-bg);
+    border-radius: 6px;
+    padding: 7px 10px;
+    margin-top: 8px;
+    line-height: 1.5;
+    display: none;
+  }
+  .notice.show { display: block; }
+  .notice.red { color: var(--red); background: var(--red-bg); }
+
+  .evan-link {
+    display: block;
+    text-align: right;
+    margin-top: 6px;
+    font-size: 10px;
+    color: var(--text3);
+    text-decoration: none;
+  }
+  .evan-link:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- 왼쪽: 지표 설정 -->
+  <div class="card">
+    <div class="card-title">지표 설정</div>
+    <div class="inputs">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="field">
+          <label>Baseline 전환율</label>
+          <div class="input-row">
+            <input type="number" id="baseline" value="5" min="0.1" max="99" step="0.1" oninput="calc()">
+            <span class="unit">%</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>MDE (최소 감지 효과)</label>
+          <div class="input-row">
+            <input type="number" id="mde" value="10" min="1" max="200" step="1" oninput="calc()">
+            <span class="unit">% 개선</span>
+          </div>
+        </div>
+      </div>
+      <div class="slider-group">
+        <div class="slider-item">
+          <div class="slider-header">
+            <span>유의수준 (α)</span>
+            <span class="slider-val" id="alphaVal">0.05</span>
+          </div>
+          <input type="range" id="alpha" min="1" max="10" value="5" oninput="updateAlpha();calc()">
+        </div>
+        <div class="slider-item">
+          <div class="slider-header">
+            <span>검정력 (Power)</span>
+            <span class="slider-val" id="powerVal">80%</span>
+          </div>
+          <input type="range" id="power" min="70" max="99" value="80" oninput="updatePower();calc()">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:5px">검정 방향</label>
+        <div class="toggle-row">
+          <div class="tog on" id="t-two" onclick="setTail('two')">양측 (Two-tailed)</div>
+          <div class="tog" id="t-one" onclick="setTail('one')">단측 (One-tailed)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 오른쪽: 실험 환경 + 상세 -->
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div class="card">
+      <div class="card-title">실험 환경</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div class="field">
+          <label>일 UV</label>
+          <div class="input-row">
+            <input type="number" id="dailyUV" value="10000" min="1" oninput="calc()">
+          </div>
+        </div>
+        <div class="field">
+          <label>Variant 수</label>
+          <div class="input-row">
+            <input type="number" id="variants" value="2" min="2" max="10" step="1" oninput="calc()">
+            <span class="unit">개</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>트래픽 비율</label>
+          <div class="input-row">
+            <input type="number" id="trafficRatio" value="100" min="1" max="100" step="1" oninput="calc()">
+            <span class="unit">%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-card">
+      <div class="card-title">상세</div>
+      <div class="detail-row"><span class="dr-l">목표 전환율 (실험군)</span><span class="dr-r" id="targetRate">—</span></div>
+      <div class="detail-row"><span class="dr-l">절대 효과 크기</span><span class="dr-r" id="absEffect">—</span></div>
+      <div class="detail-row"><span class="dr-l">일 실험 참여 UV</span><span class="dr-r" id="dailyExp">—</span></div>
+      <div class="detail-row"><span class="dr-l">주 단위 환산</span><span class="dr-r" id="weeks">—</span></div>
+    </div>
+  </div>
+
+  <!-- 하단: 결과 -->
+  <div class="results-card">
+    <div class="results-grid">
+      <div class="res-item">
+        <div class="res-label">그룹당 샘플</div>
+        <div class="res-value accent" id="sampleSize">—</div>
+        <div class="res-unit">명 / variant</div>
+      </div>
+      <div class="res-item">
+        <div class="res-label">총 필요 샘플</div>
+        <div class="res-value" id="totalSample">—</div>
+        <div class="res-unit">명 전체</div>
+      </div>
+      <div class="res-item">
+        <div class="res-label">최소 실험 기간</div>
+        <div class="res-value accent" id="days">—</div>
+        <div class="res-unit">일</div>
+      </div>
+      <div class="res-item">
+        <div class="res-label">예상 완료일</div>
+        <div class="res-value" id="endDate" style="font-size:20px;padding-top:3px">—</div>
+        <div class="res-unit">오늘 시작 기준</div>
+      </div>
+    </div>
+    <div class="feas-row">
+      <span class="feas-label">실현 가능성</span>
+      <div class="bar-track"><div class="bar-fill" id="feasBar" style="width:0%"></div></div>
+      <span class="badge" id="feasBadge">—</span>
+    </div>
+    <div class="notice" id="notice"></div>
+    <a href="https://www.evanmiller.org/ab-testing/sample-size.html" target="_blank" class="evan-link">↗ Evan Miller 원본에서 검증</a>
+  </div>
+
+</div>
+
+<script>
+let tail = 'two';
+function setTail(t) {
+  tail = t;
+  document.getElementById('t-two').className = 'tog'+(t==='two'?' on':'');
+  document.getElementById('t-one').className = 'tog'+(t==='one'?' on':'');
+  calc();
+}
+function updateAlpha() {
+  document.getElementById('alphaVal').textContent = (document.getElementById('alpha').value/100).toFixed(2);
+}
+function updatePower() {
+  document.getElementById('powerVal').textContent = document.getElementById('power').value+'%';
+}
+function normInv(p) {
+  const a=[0,-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00];
+  const b=[0,-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01];
+  const c=[0,-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00];
+  const d=[0,7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];
+  const pL=0.02425, pH=1-pL;
+  let q,r;
+  if(p<pL){q=Math.sqrt(-2*Math.log(p));return(((((c[1]*q+c[2])*q+c[3])*q+c[4])*q+c[5])*q+c[6])/((((d[1]*q+d[2])*q+d[3])*q+d[4])*q+1);}
+  else if(p<=pH){q=p-0.5;r=q*q;return(((((a[1]*r+a[2])*r+a[3])*r+a[4])*r+a[5])*r+a[6])*q/(((((b[1]*r+b[2])*r+b[3])*r+b[4])*r+b[5])*r+1);}
+  else{q=Math.sqrt(-2*Math.log(1-p));return-(((((c[1]*q+c[2])*q+c[3])*q+c[4])*q+c[5])*q+c[6])/((((d[1]*q+d[2])*q+d[3])*q+d[4])*q+1);}
+}
+function sampleSize(p1,p2,alpha,power,two) {
+  const za=normInv(1-(two?alpha/2:alpha)), zb=normInv(power);
+  const p=(p1+p2)/2;
+  return Math.ceil(Math.pow(za*Math.sqrt(2*p*(1-p))+zb*Math.sqrt(p1*(1-p1)+p2*(1-p2)),2)/Math.pow(p2-p1,2));
+}
+function fmt(n){return n.toLocaleString('ko-KR');}
+function calc() {
+  const bl=parseFloat(document.getElementById('baseline').value)/100;
+  const mde=parseFloat(document.getElementById('mde').value)/100;
+  const alpha=parseFloat(document.getElementById('alpha').value)/100;
+  const power=parseFloat(document.getElementById('power').value)/100;
+  const uv=parseFloat(document.getElementById('dailyUV').value);
+  const vars=parseInt(document.getElementById('variants').value);
+  const tr=parseFloat(document.getElementById('trafficRatio').value)/100;
+  if(!bl||!mde||!uv) return;
+  const p2=bl*(1+mde);
+  const n=sampleSize(bl,p2,alpha,power,tail==='two');
+  const total=n*vars;
+  const dailyExp=Math.floor(uv*tr);
+  const days=Math.ceil(total/dailyExp);
+  const end=new Date(); end.setDate(end.getDate()+days);
+  const endStr=`${end.getMonth()+1}월 ${end.getDate()}일`;
+
+  document.getElementById('sampleSize').textContent=fmt(n);
+  document.getElementById('totalSample').textContent=fmt(total);
+  document.getElementById('days').textContent=fmt(days);
+  document.getElementById('endDate').textContent=endStr;
+  document.getElementById('targetRate').textContent=(p2*100).toFixed(2)+'%';
+  document.getElementById('absEffect').textContent='+'+((p2-bl)*100).toFixed(2)+'%p';
+  document.getElementById('dailyExp').textContent=fmt(dailyExp)+'명';
+  document.getElementById('weeks').textContent=(days/7).toFixed(1)+'주';
+
+  const pct=Math.max(0,Math.round((1-Math.min(days/90,1))*100));
+  const bar=document.getElementById('feasBar');
+  const badge=document.getElementById('feasBadge');
+  const notice=document.getElementById('notice');
+  bar.style.width=pct+'%';
+  if(days<=14){
+    bar.style.background='var(--green)';
+    badge.className='badge badge-g'; badge.textContent='✓ 실험 가능';
+    notice.className='notice';
+  } else if(days<=30){
+    bar.style.background='var(--amber)';
+    badge.className='badge badge-a'; badge.textContent='△ 주의 필요';
+    notice.className='notice show';
+    notice.textContent='실험 기간이 길어질수록 오염 요인이 커집니다. MDE를 높이거나 트래픽 비율을 늘려보세요.';
+  } else {
+    bar.style.background='var(--red)';
+    badge.className='badge badge-r'; badge.textContent='✗ 재검토 필요';
+    notice.className='notice show red';
+    notice.textContent=`실험 기간 ${fmt(days)}일 — MDE를 높이거나, 트래픽 비율을 늘리거나, 실험 지면 변경을 권장합니다.`;
+  }
+}
+updateAlpha(); updatePower(); calc();
+</script>
+</body>
+</html>
