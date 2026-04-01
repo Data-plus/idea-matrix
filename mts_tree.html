@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTS 고객 분류 체계</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #F7F8FA;
+  --surface:  #FFFFFF;
+  --border:   #E4E7EC;
+  --border-strong: #CDD2DB;
+  --text-1:   #101828;
+  --text-2:   #344054;
+  --text-3:   #667085;
+  --text-4:   #98A2B3;
+  --mono:     'IBM Plex Mono', monospace;
+
+  --active:   #1D4ED8;   /* blue-700  */
+  --passive:  #047857;   /* emerald-700 */
+  --service:  #5B21B6;   /* violet-800  */
+
+  --active-bg:  #EFF6FF;
+  --passive-bg: #ECFDF5;
+  --service-bg: #F5F3FF;
+
+  --meas-yes:   #16A34A;
+  --meas-infer: #B45309;
+  --meas-vague: #9CA3AF;
+}
+
+body {
+  background: var(--bg);
+  font-family: 'Noto Sans KR', sans-serif;
+  color: var(--text-1);
+  min-height: 100vh;
+  padding: 32px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Header ──────────────────────────────── */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.header-left { display: flex; flex-direction: column; gap: 4px; }
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 10px; font-weight: 500;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-4);
+}
+h1 {
+  font-size: 22px; font-weight: 700;
+  color: var(--text-1); letter-spacing: -0.03em;
+}
+.subtitle { font-size: 13px; color: var(--text-3); }
+
+/* ── Legend ──────────────────────────────── */
+.header-right {
+  display: flex; flex-direction: column;
+  align-items: flex-end; gap: 10px;
+}
+.legend-row { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.leg {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12px; color: var(--text-3);
+}
+.leg-bar {
+  width: 3px; height: 16px;
+  border-radius: 2px; flex-shrink: 0;
+}
+.meas-row {
+  display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+}
+.meas-item {
+  font-family: var(--mono);
+  font-size: 10px; color: var(--text-4);
+  display: flex; align-items: center; gap: 5px;
+}
+.meas-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.meas-sep { color: var(--border-strong); }
+
+/* ── Tree wrapper ────────────────────────── */
+.tree-wrap {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 190px);
+}
+
+/* ── Level labels ────────────────────────── */
+.lvl-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.lvl-tag {
+  flex-shrink: 0;
+  height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono);
+  font-size: 9px; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-4);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Canvas ──────────────────────────────── */
+.canvas { position: relative; }
+.edges-svg { position: absolute; top: 0; left: 0; overflow: visible; pointer-events: none; }
+
+/* ── Divider ─────────────────────────────── */
+.divider {
+  position: absolute; left: 0; right: 0;
+  pointer-events: none;
+  display: flex; align-items: center; gap: 12px;
+}
+.divider-line {
+  flex: 1; height: 1px;
+  background: var(--border-strong);
+}
+.divider-label {
+  font-family: var(--mono);
+  font-size: 9px; font-weight: 500;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-4);
+  white-space: nowrap; flex-shrink: 0;
+}
+
+/* ── Section strip ───────────────────────── */
+.section-strip {
+  position: absolute;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono);
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  border-right: 1px solid var(--border);
+}
+
+/* ── Node ────────────────────────────────── */
+.node {
+  position: absolute;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 10px 8px 12px;
+  cursor: default;
+  transition: opacity 0.12s, box-shadow 0.12s, border-color 0.12s;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.node-row-top {
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 6px;
+}
+.node-name-wrap {
+  display: flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden;
+}
+.node-icon { font-size: 12px; flex-shrink: 0; line-height: 1; }
+.node-name {
+  font-size: 13px; font-weight: 600;
+  color: var(--text-1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: color 0.12s;
+}
+.node-name.l1 { font-size: 14px; font-weight: 700; }
+.node-name.svc { font-size: 12px; font-weight: 500; }
+
+.meas-badge {
+  font-family: var(--mono);
+  font-size: 9px; font-weight: 500;
+  flex-shrink: 0;
+  padding: 1px 0;
+  letter-spacing: 0.02em;
+}
+
+.node-signal {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-4);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  padding-left: 1px;
+  line-height: 1.4;
+}
+
+/* ── Footer ──────────────────────────────── */
+.footer {
+  margin-top: 14px; padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 10px; color: var(--text-4);
+  letter-spacing: 0.06em;
+  display: flex; align-items: center; gap: 16px;
+}
+.footer-sep { color: var(--border-strong); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <span class="eyebrow">NH Investment Securities · SQ10 · Customer Segmentation</span>
+    <h1>MTS 고객 분류 체계</h1>
+    <span class="subtitle">투자 행동 기반 5단계 세그멘테이션 — 측정 기준 및 서비스 연결</span>
+  </div>
+  <div class="header-right">
+    <div class="legend-row">
+      <div class="leg">
+        <div class="leg-bar" style="background:var(--active)"></div>
+        <span>Active 능동형</span>
+      </div>
+      <div class="leg">
+        <div class="leg-bar" style="background:var(--passive)"></div>
+        <span>Passive 수동형</span>
+      </div>
+      <div class="leg">
+        <div class="leg-bar" style="background:var(--service)"></div>
+        <span>서비스 연결</span>
+      </div>
+    </div>
+    <div class="meas-row">
+      <div class="meas-item">
+        <div class="meas-dot" style="background:var(--meas-yes)"></div>
+        <span>측정가능 — 로그 직접 추출</span>
+      </div>
+      <span class="meas-sep">·</span>
+      <div class="meas-item">
+        <div class="meas-dot" style="background:var(--meas-infer)"></div>
+        <span>추론필요 — 파이프라인 선행</span>
+      </div>
+      <span class="meas-sep">·</span>
+      <div class="meas-item">
+        <div class="meas-dot" style="background:var(--meas-vague)"></div>
+        <span>기준미정의 — 미래 과제</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tree-wrap" id="treeWrap">
+  <div class="lvl-row"  id="lvlRow"></div>
+  <div class="canvas"   id="canvas"></div>
+</div>
+
+<div class="footer">
+  <span>노드 호버 시 경로 하이라이트</span>
+  <span class="footer-sep">—</span>
+  <span>실선 엣지 = 측정가능</span>
+  <span class="footer-sep">—</span>
+  <span>점선 엣지 = 추론 필요 / 기준 미정의</span>
+</div>
+
+<script>
+/* ─── Constants ─────────────────────────── */
+const LEAF_H   = 68;
+const NODE_H   = 54;
+const NODE_H1  = 62;  // L1
+const PAD      = { x: 38, y: 16 };
+const STRIP_W  = 22;  // section strip width
+
+// Columns for levels 1–5
+const COL = [
+  { x:   0, w: 156 },   // L1
+  { x: 190, w: 152 },   // L2
+  { x: 376, w: 152 },   // L3
+  { x: 562, w: 152 },   // L4
+  { x: 748, w: 172 },   // L5 service
+];
+function colOf(level) { return COL[level - 1]; }
+
+/* Colors */
+const ACTIVE_COLOR  = '#1D4ED8';
+const PASSIVE_COLOR = '#047857';
+const SERVICE_COLOR = '#5B21B6';
+
+function accentOf(n) {
+  if (n.c === 'service') return SERVICE_COLOR;
+  return n.side === 'active' ? ACTIVE_COLOR : PASSIVE_COLOR;
+}
+function gKey(n) {
+  if (n.c === 'service') return 'svc';
+  return n.side === 'active' ? 'act' : 'pas';
+}
+
+/* Measurability */
+const ML = { 0:'na', 1:'yes', 2:'yes', 3:'infer', 4:'vague', 5:'svc' };
+const MC = { yes:'#16A34A', infer:'#B45309', vague:'#9CA3AF', svc:'#9CA3AF' };
+const ML_LABEL = { yes:'✓', infer:'~', vague:'—' };
+const ML_SIG_PREFIX = { yes:'→ ', infer:'⟳ ', vague:'— ' };
+
+/* ─── Tree Data ──────────────────────────── */
+const RAW = {
+  id:'root', hidden:true, level:0,
+  ch:[
+    {
+      id:'active', label:'Active', side:'active', level:1,
+      sig:'거래빈도 상위 기준',
+      ch:[
+        {
+          id:'trade', label:'거래주도형', side:'active', level:2, sig:'월 주문건수 기준',
+          ch:[
+            {
+              id:'sys', label:'시스템트레이더', side:'active', level:3, sig:'API 호출 이력 존재',
+              ch:[
+                { id:'algo', label:'알고매매형',  side:'active', level:4, sig:'매매 자동화 패턴',
+                  ch:[{ id:'s1', label:'API 자동매매 플랫폼', icon:'⚡', side:'active', level:5, c:'service' }] },
+                { id:'apid', label:'API 개발자형', side:'active', level:4, sig:'API Key 발급 이력',
+                  ch:[{ id:'s2', label:'Open API · 데이터마켓', icon:'🔌', side:'active', level:5, c:'service' }] },
+              ]
+            },
+            {
+              id:'short', label:'단기매매형', side:'active', level:3, sig:'평균 보유기간 < 7일',
+              ch:[
+                { id:'day',   label:'데이트레이더', side:'active', level:4, sig:'당일 매매 비중',
+                  ch:[{ id:'s3', label:'실시간 고급차트', icon:'📊', side:'active', level:5, c:'service' }] },
+                { id:'swing', label:'스윙트레이더',  side:'active', level:4, sig:'보유기간 2–14일 비중',
+                  ch:[{ id:'s4', label:'기술적분석 도구', icon:'🔬', side:'active', level:5, c:'service' }] },
+              ]
+            },
+          ]
+        },
+        {
+          id:'info', label:'정보탐색형', side:'active', level:2, sig:'콘텐츠 체류시간 기준',
+          ch:[
+            {
+              id:'comm', label:'커뮤니티형', side:'active', level:3, sig:'커뮤니티 탭 체류 상위',
+              ch:[
+                { id:'soc',  label:'소셜투자형', side:'active', level:4, sig:'타인 포트폴리오 열람 빈도',
+                  ch:[{ id:'s5', label:'소셜 트레이딩',     icon:'👥', side:'active', level:5, c:'service' }] },
+                { id:'disc', label:'의견공유형', side:'active', level:4, sig:'댓글·게시 이력',
+                  ch:[{ id:'s6', label:'종목토론 커뮤니티', icon:'💬', side:'active', level:5, c:'service' }] },
+              ]
+            },
+            {
+              id:'rsch', label:'리서치형', side:'active', level:3, sig:'리포트 열람 횟수 상위',
+              ch:[
+                { id:'rep',  label:'리포트구독형', side:'active', level:4, sig:'구독·알림 설정 여부',
+                  ch:[{ id:'s7', label:'프리미엄 리서치',        icon:'📑', side:'active', level:5, c:'service' }] },
+                { id:'self', label:'자체분석형',   side:'active', level:4, sig:'차트 커스텀 이력',
+                  ch:[{ id:'s8', label:'AI 리서치 어시스턴트',   icon:'🤖', side:'active', level:5, c:'service' }] },
+              ]
+            },
+          ]
+        },
+      ]
+    },
+    {
+      id:'passive', label:'Passive', side:'passive', level:1,
+      sig:'장기보유 비율 기준',
+      ch:[
+        {
+          id:'goal', label:'목표달성형', side:'passive', level:2, sig:'적립상품 보유 여부',
+          ch:[
+            {
+              id:'long', label:'장기적립형', side:'passive', level:3, sig:'적립식 보유 6개월 이상',
+              ch:[
+                { id:'etfa', label:'ETF 적립형', side:'passive', level:4, sig:'ETF 적립 설정 종수',
+                  ch:[{ id:'s9',  label:'금융상품 모으기',       icon:'💰', side:'passive', level:5, c:'service' }] },
+                { id:'div',  label:'배당투자형', side:'passive', level:4, sig:'배당주 보유 비중',
+                  ch:[{ id:'s10', label:'배당 포트폴리오 빌더', icon:'🌱', side:'passive', level:5, c:'service' }] },
+              ]
+            },
+            {
+              id:'theme', label:'테마투자형', side:'passive', level:3, sig:'테마 검색·편입 패턴',
+              ch:[
+                { id:'dom',  label:'국내테마형',   side:'passive', level:4, sig:'국내 테마 ETF 보유 여부',
+                  ch:[{ id:'s11', label:'테마 ETF 추천', icon:'🎯', side:'passive', level:5, c:'service' }] },
+                { id:'glob', label:'글로벌테마형', side:'passive', level:4, sig:'해외 ETF · 환전 이력',
+                  ch:[{ id:'s12', label:'글로벌 자산배분', icon:'🌍', side:'passive', level:5, c:'service' }] },
+              ]
+            },
+          ]
+        },
+        {
+          id:'deleg', label:'관리위임형', side:'passive', level:2, sig:'AI · 상담 서비스 가입',
+          ch:[
+            {
+              id:'ai', label:'AI 활용형', side:'passive', level:3, sig:'AI 기능 접근 이력',
+              ch:[
+                { id:'robo', label:'로보어드바이저형', side:'passive', level:4, sig:'로보 상품 가입 여부',
+                  ch:[{ id:'s13', label:'로보어드바이저',  icon:'🦾', side:'passive', level:5, c:'service' }] },
+                { id:'aipb', label:'AI 상담형',        side:'passive', level:4, sig:'AI 상담 이용 횟수',
+                  ch:[{ id:'s14', label:'AI PB 서비스', icon:'🏦', side:'passive', level:5, c:'service' }] },
+              ]
+            },
+            {
+              id:'beg', label:'입문자형', side:'passive', level:3, sig:'계좌연령 · 거래금액 기준',
+              ch:[
+                { id:'mock',  label:'모의투자형', side:'passive', level:4, sig:'모의투자 이용 이력',
+                  ch:[{ id:'s15', label:'모의투자 게임',   icon:'🎮', side:'passive', level:5, c:'service' }] },
+                { id:'guide', label:'가이드형',   side:'passive', level:4, sig:'콘텐츠 단순 조회 위주',
+                  ch:[{ id:'s16', label:'투자 입문 코스', icon:'📚', side:'passive', level:5, c:'service' }] },
+              ]
+            },
+          ]
+        },
+      ]
+    },
+  ]
+};
+
+/* ─── Layout ─────────────────────────────── */
+function countLeaves(n) {
+  if (!n.ch?.length) { n.leaves = 1; return 1; }
+  n.leaves = n.ch.reduce((s, c) => s + countLeaves(c), 0);
+  return n.leaves;
+}
+function assignY(n, sy) {
+  n.cy = sy + (n.leaves * LEAF_H) / 2;
+  if (n.ch) { let y = sy; n.ch.forEach(c => { assignY(c, y); y += c.leaves * LEAF_H; }); }
+}
+function collect(n, nodes, edges) {
+  if (!n.hidden) nodes.push(n);
+  if (n.ch) n.ch.forEach(c => {
+    if (!n.hidden) edges.push([n, c]);
+    else edges.push([n, c]);
+    collect(c, nodes, edges);
+  });
+}
+function buildAnc(n, path, map) {
+  map[n.id] = [...path];
+  if (n.ch) n.ch.forEach(c => buildAnc(c, [...path, n.id], map));
+}
+
+const tree = JSON.parse(JSON.stringify(RAW));
+countLeaves(tree); assignY(tree, 0);
+
+const nodes = [], allEdges = [];
+collect(tree, nodes, allEdges);
+const edges = allEdges.filter(([p]) => !p.hidden);
+const anc   = {};
+buildAnc(tree, [], anc);
+
+const totalH    = tree.leaves * LEAF_H;
+const lastCol   = COL[4];
+const canvasW   = STRIP_W + PAD.x + lastCol.x + lastCol.w + 16;
+const canvasH   = totalH + PAD.y * 2;
+const divY      = tree.ch[0].leaves * LEAF_H; // = 8 × LEAF_H
+const nodeOffX  = STRIP_W + PAD.x;            // all nodes shifted right by strip
+
+/* ─── Level label row ─────────────────────── */
+const lvlRow = document.getElementById('lvlRow');
+lvlRow.style.width       = canvasW + 'px';
+lvlRow.style.paddingLeft = nodeOffX + 'px';
+lvlRow.style.gap         = '4px';
+['L1', 'L2', 'L3', 'L4', 'L5 서비스'].forEach((lbl, i) => {
+  const el = document.createElement('div');
+  el.className        = 'lvl-tag';
+  el.style.width      = COL[i].w + 'px';
+  el.style.letterSpacing = '0.12em';
+  el.textContent      = lbl;
+  lvlRow.appendChild(el);
+});
+
+/* ─── Canvas ──────────────────────────────── */
+const canvas = document.getElementById('canvas');
+canvas.style.width  = canvasW + 'px';
+canvas.style.height = canvasH + 'px';
+
+/* Section strips */
+function makeStrip(label, color, topY, h) {
+  const el = document.createElement('div');
+  el.className       = 'section-strip';
+  el.style.left      = '0px';
+  el.style.top       = (topY + PAD.y) + 'px';
+  el.style.width     = STRIP_W + 'px';
+  el.style.height    = h + 'px';
+  el.style.color     = color;
+  el.textContent     = label;
+  canvas.appendChild(el);
+}
+makeStrip('ACTIVE',  ACTIVE_COLOR,  0,       divY - 4);
+makeStrip('PASSIVE', PASSIVE_COLOR, divY + 4, canvasH - divY - PAD.y - 4);
+
+/* Divider */
+const divEl = document.createElement('div');
+divEl.className        = 'divider';
+divEl.style.top        = (divY + PAD.y) + 'px';
+divEl.style.paddingLeft  = (STRIP_W + 12) + 'px';
+divEl.style.paddingRight = '12px';
+divEl.innerHTML = `<div class="divider-line"></div>`;
+canvas.appendChild(divEl);
+
+/* SVG */
+const NS  = 'http://www.w3.org/2000/svg';
+const svg = document.createElementNS(NS, 'svg');
+svg.classList.add('edges-svg');
+svg.setAttribute('width',  canvasW);
+svg.setAttribute('height', canvasH);
+svg.style.top  = PAD.y + 'px';
+svg.style.left = nodeOffX + 'px';
+
+const defs = document.createElementNS(NS, 'defs');
+[['act', ACTIVE_COLOR], ['pas', PASSIVE_COLOR], ['svc', SERVICE_COLOR]].forEach(([id, color]) => {
+  const f = document.createElementNS(NS, 'filter'); f.setAttribute('id', 'gl-' + id);
+  const b = document.createElementNS(NS, 'feGaussianBlur'); b.setAttribute('stdDeviation', '2.5'); b.setAttribute('result', 'cb');
+  const m = document.createElementNS(NS, 'feMerge');
+  ['cb','SourceGraphic'].forEach(s => { const mn = document.createElementNS(NS,'feMergeNode'); mn.setAttribute('in', s); m.appendChild(mn); });
+  f.appendChild(b); f.appendChild(m); defs.appendChild(f);
+});
+svg.appendChild(defs);
+
+const pathEls = {};
+edges.forEach(([p, ch]) => {
+  if (ch.level < 1) return;
+  const pc = colOf(p.level), cc = colOf(ch.level);
+  const x1 = pc.x + pc.w, y1 = p.cy;
+  const x2 = cc.x,         y2 = ch.cy;
+  const mx = x1 + (x2 - x1) * 0.5;
+  const m  = ML[ch.level];
+  const color = accentOf(ch);
+
+  const path = document.createElementNS(NS, 'path');
+  path.setAttribute('d', `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`);
+  path.setAttribute('stroke', color);
+  path.setAttribute('stroke-width', '1.5');
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke-opacity', '0.25');
+  if (m === 'infer') path.setAttribute('stroke-dasharray', '5 3');
+  if (m === 'vague') path.setAttribute('stroke-dasharray', '2 3');
+  path.style.transition = 'stroke-opacity 0.12s, stroke-width 0.12s';
+  svg.appendChild(path);
+  pathEls[`${p.id}__${ch.id}`] = { el: path, pid: p.id, cid: ch.id, gk: gKey(ch) };
+});
+canvas.appendChild(svg);
+
+/* ─── Nodes ───────────────────────────────── */
+const nodeEls = {};
+nodes.forEach(n => {
+  if (n.hidden || n.level < 1) return;
+  const c    = colOf(n.level);
+  const isSvc = n.c === 'service';
+  const isL1  = n.level === 1;
+  const h     = isL1 ? NODE_H1 : NODE_H;
+  const m     = ML[n.level];
+  const acc   = accentOf(n);
+
+  const div = document.createElement('div');
+  div.className        = 'node';
+  div.style.left       = (c.x + nodeOffX) + 'px';
+  div.style.top        = (n.cy - h / 2 + PAD.y) + 'px';
+  div.style.width      = c.w + 'px';
+  div.style.height     = h + 'px';
+  div.style.borderLeft = `3px solid ${acc}`;
+  div.style.borderRadius = '4px';
+
+  /* top row */
+  const top = document.createElement('div');
+  top.className = 'node-row-top';
+
+  const nw = document.createElement('div');
+  nw.className = 'node-name-wrap';
+  if (n.icon) {
+    const ic = document.createElement('span'); ic.className = 'node-icon'; ic.textContent = n.icon;
+    nw.appendChild(ic);
+  }
+  const nm = document.createElement('span');
+  nm.className   = 'node-name' + (isL1 ? ' l1' : isSvc ? ' svc' : '');
+  nm.textContent = n.label;
+  if (isL1) nm.style.color = acc;
+  nw.appendChild(nm);
+  top.appendChild(nw);
+
+  /* badge */
+  if (m !== 'na' && m !== 'svc' && ML_LABEL[m]) {
+    const badge = document.createElement('span');
+    badge.className   = 'meas-badge';
+    badge.textContent = ML_LABEL[m];
+    badge.style.color = MC[m];
+    top.appendChild(badge);
+  }
+  div.appendChild(top);
+
+  /* signal */
+  if (n.sig) {
+    const sig = document.createElement('div');
+    sig.className   = 'node-signal';
+    const sigColor  = m === 'yes' ? MC.yes : m === 'infer' ? MC.infer : MC.vague;
+    sig.textContent = (ML_SIG_PREFIX[m] || '') + n.sig;
+    sig.style.color = sigColor;
+    div.appendChild(sig);
+  }
+
+  div.addEventListener('mouseenter', () => onHov(n.id));
+  div.addEventListener('mouseleave', () => onHov(null));
+  canvas.appendChild(div);
+  nodeEls[n.id] = { el: div, nm, n };
+});
+
+/* ─── Hover ───────────────────────────────── */
+function related(id, hov) {
+  if (!hov) return false;
+  if (id === hov) return true;
+  return (anc[hov]||[]).includes(id) || (anc[id]||[]).includes(hov);
+}
+function onHov(id) {
+  Object.values(nodeEls).forEach(({ el, nm, n }) => {
+    const isL1  = n.level === 1;
+    const acc   = accentOf(n);
+    const hi    = id === n.id;
+    const rel   = !hi && related(n.id, id);
+    const dim   = id && !hi && !rel;
+
+    el.style.opacity     = dim ? '0.2' : '1';
+    el.style.background  = hi ? (n.side === 'active' ? '#EFF6FF' : n.c === 'service' ? '#F5F3FF' : '#ECFDF5') : '#FFFFFF';
+    el.style.borderColor = hi || rel ? acc : 'var(--border)';
+    el.style.borderLeftColor = acc;
+    el.style.boxShadow   = hi ? `0 0 0 3px ${acc}18` : 'none';
+    nm.style.color       = (hi || rel || isL1) ? acc : 'var(--text-1)';
+  });
+  Object.values(pathEls).forEach(({ el, pid, cid, gk }) => {
+    const hi = id && related(pid, id) && related(cid, id);
+    el.setAttribute('stroke-width',   hi ? '2.5' : '1.5');
+    el.setAttribute('stroke-opacity', id ? (hi ? '0.85' : '0.04') : '0.25');
+    el.setAttribute('filter',         hi ? `url(#gl-${gk})` : '');
+  });
+}
+</script>
+</body>
+</html>
